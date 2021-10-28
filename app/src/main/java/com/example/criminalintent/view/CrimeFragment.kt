@@ -41,7 +41,7 @@ class CrimeFragment : Fragment() {
         mCrimeTitle = view.findViewById(R.id.crime_title)
         mCrimeData = view.findViewById(R.id.crime_date)
         mCrimeData?.apply {
-            text = mCrime.data.toString()
+            text = mCrime.date.toString()
             isEnabled = false
         }
         mCrimeSolved = view.findViewById(R.id.crime_solved)
