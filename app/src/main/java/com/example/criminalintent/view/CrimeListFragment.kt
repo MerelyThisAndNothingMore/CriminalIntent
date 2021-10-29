@@ -1,6 +1,7 @@
 package com.example.criminalintent.view
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,13 +9,18 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.criminalintent.R
 import com.example.criminalintent.model.Crime
 import com.example.criminalintent.viewmodel.CrimeListViewModel
+import kotlinx.android.synthetic.main.fragment_crime.*
+import org.w3c.dom.Text
 import java.text.DateFormat
+import java.util.concurrent.Executors
+import kotlin.concurrent.thread
 
 /****
  * @author : zhangjin.rolling
@@ -29,13 +35,8 @@ class CrimeListFragment: Fragment() {
     }
     private var mRecyclerView: RecyclerView? = null
 
-    private val crimeListViewModel by lazy {
-        ViewModelProvider(this).get(CrimeListViewModel::class.java)
-    }
+    private val mCrimeListViewModel by lazy { ViewModelProvider(this).get(CrimeListViewModel::class.java) }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -45,8 +46,21 @@ class CrimeListFragment: Fragment() {
         val view = inflater.inflate(R.layout.fragment_crime_list, container, false)
         mRecyclerView = view.findViewById(R.id.crime_list_recycler_view)
         mRecyclerView?.layoutManager = LinearLayoutManager(context)
-        mRecyclerView?.adapter = CrimeAdapter(crimeListViewModel.crimeList)
+        mRecyclerView?.adapter = CrimeAdapter(emptyList())
         return view
+    }
+
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        mCrimeListViewModel.crimeListLiveData.observe(
+            viewLifecycleOwner,
+            Observer { crimes ->
+                crimes?.let {
+                    mRecyclerView?.adapter = CrimeAdapter(it)
+                }
+            }
+        )
     }
 
 

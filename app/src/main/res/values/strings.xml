@@ -7,4 +7,5 @@
     <string name="crime_solved_pic_des">a pic indicates if the crime is solved</string>
     <string name="crime_title_indicate">Crime Title</string>
     <string name="crime_date_indicator">Crime Date</string>
+    <string name="the_crime_list_title">The Crime List</string>
 </resources>
