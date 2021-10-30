@@ -21,21 +21,10 @@ class CrimeListViewModel: ViewModel() {
 
     val crimeListLiveData: LiveData<List<Crime>> by lazy { mCrimeRepository.getAllCrimes() }
 
-    fun insertCrimes() {
+    var saveCrimeList: MutableList<Crime> = mutableListOf()
 
-        GlobalScope.launch(Dispatchers.IO) {
-            val crimes : MutableList<Crime> = mutableListOf()
-            for (i in 1..100) {
-                crimes.add(Crime().apply {
-                    title = "This is Crime # $i"
-                    isSolved = i % 2 == 0
-                })
-            }
-            Log.e("init crimes", "start crimes")
-            mCrimeRepository.insertCrimes(crimes)
-            Log.e("init crimes", "end crimes")
-        }
-
+    fun updateCrimes() {
+        mCrimeRepository.updateCrimes(saveCrimeList)
     }
 
 }

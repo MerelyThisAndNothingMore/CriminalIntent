@@ -6,6 +6,7 @@ import androidx.room.Room
 import com.example.criminalintent.database.CrimeDatabase
 import com.example.criminalintent.model.Crime
 import java.util.*
+import java.util.concurrent.Executors
 
 /****
  * @author : zhangjin.rolling
@@ -21,21 +22,23 @@ class CrimeRepository private constructor(context: Context) {
         ).build()
     }
 
-    private val crimeDao by lazy {
-        database.getCrimeDao()
-    }
+    private val crimeDao by lazy { database.getCrimeDao() }
+
+    private val executor = Executors.newSingleThreadExecutor()
+
+    private fun execute(command: () -> Unit) = executor.execute(command)
 
     fun getAllCrimes(): LiveData<List<Crime>> = crimeDao.getAllCrimes()
 
     fun getCrime(id: UUID): LiveData<Crime?> = crimeDao.getCrime(id)
 
-    suspend fun insertCrime(crime: Crime?) {
-        crimeDao.insertCrime(crime)
-    }
+    fun insertCrime(crime: Crime) = execute { crimeDao.insertCrime(crime) }
 
-    suspend fun insertCrimes(crimes: List<Crime>) {
-        crimeDao.insertCrimes(crimes)
-    }
+    fun insertCrimes(crimes: List<Crime>) = execute { crimeDao.insertCrimes(crimes) }
+
+    fun updateCrime(crime: Crime) = execute { crimeDao.updateCrime(crime) }
+
+    fun updateCrimes(crimes: List<Crime>) = execute { crimeDao.updateCrimes(crimes) }
 
     companion object {
         private var INSTANCE: CrimeRepository? = null

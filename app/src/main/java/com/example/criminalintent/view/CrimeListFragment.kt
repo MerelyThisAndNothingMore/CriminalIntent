@@ -1,13 +1,13 @@
 package com.example.criminalintent.view
 
+import android.content.Context
+import android.graphics.Paint
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
+import android.widget.CheckBox
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -16,26 +16,30 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.criminalintent.R
 import com.example.criminalintent.model.Crime
 import com.example.criminalintent.viewmodel.CrimeListViewModel
-import kotlinx.android.synthetic.main.fragment_crime.*
-import org.w3c.dom.Text
-import java.text.DateFormat
-import java.util.concurrent.Executors
-import kotlin.concurrent.thread
+import java.util.*
 
 /****
  * @author : zhangjin.rolling
  * @date : 2021/10/22
  */
-class CrimeListFragment: Fragment() {
+class CrimeListFragment : Fragment() {
     companion object {
         const val TAG = "CrimeListFragment"
         fun newInstance(): CrimeListFragment {
             return CrimeListFragment()
         }
     }
+
+    private var callbacks: Callbacks? = null
+
     private var mRecyclerView: RecyclerView? = null
 
     private val mCrimeListViewModel by lazy { ViewModelProvider(this).get(CrimeListViewModel::class.java) }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        callbacks = context as Callbacks?
+    }
 
 
     override fun onCreateView(
@@ -46,7 +50,7 @@ class CrimeListFragment: Fragment() {
         val view = inflater.inflate(R.layout.fragment_crime_list, container, false)
         mRecyclerView = view.findViewById(R.id.crime_list_recycler_view)
         mRecyclerView?.layoutManager = LinearLayoutManager(context)
-        mRecyclerView?.adapter = CrimeAdapter(emptyList())
+        mRecyclerView?.adapter = CrimeAdapter()
         return view
     }
 
@@ -57,24 +61,35 @@ class CrimeListFragment: Fragment() {
             viewLifecycleOwner,
             Observer { crimes ->
                 crimes?.let {
-                    mRecyclerView?.adapter = CrimeAdapter(it)
+                    mCrimeListViewModel.saveCrimeList = it.toMutableList()
+                    mRecyclerView?.adapter = CrimeAdapter()
                 }
             }
         )
     }
 
+    override fun onStop() {
+        super.onStop()
+        mCrimeListViewModel.updateCrimes()
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        callbacks = null
+    }
 
 
     private inner class CrimeHolder(view: View) : RecyclerView.ViewHolder(view) {
 
         private var mCrime: Crime = Crime()
+        private var mPosition: Int? = null
         private val mCrimeTitle: TextView by lazy {
             itemView.findViewById(R.id.crime_title)
         }
         private val mCrimeDate: TextView by lazy {
             itemView.findViewById(R.id.crime_date)
         }
-        private val mCrimeSolved: ImageView by lazy {
+        private val mCrimeSolved: CheckBox by lazy {
             itemView.findViewById(R.id.crime_solved)
         }
 
@@ -89,35 +104,58 @@ class CrimeListFragment: Fragment() {
 
         private fun setClickListener() {
             itemView.setOnClickListener {
-                Toast.makeText(context, "${mCrime.title} passed", Toast.LENGTH_SHORT).show()
+                callbacks?.onCrimeSelected(mCrime.id)
+            }
+
+            mCrimeSolved.setOnCheckedChangeListener { _, isChecked ->
+                mCrime.isSolved = isChecked
+                checkUI()
+                mPosition?.let { mCrimeListViewModel.saveCrimeList[it] = mCrime }
             }
         }
 
-        fun bind(crime: Crime) {
+        fun bind(crime: Crime, position: Int) {
             mCrime = crime
+            mPosition = position
             mCrimeTitle.text = crime.title
             mCrimeDate.text = crime.date.toString()
-            mCrimeSolved.setImageResource(if (mCrime.isSolved) R.drawable.crime_solved_pic else R.drawable.crime_unsolved_pic)
+            checkUI()
+        }
+
+        private fun checkUI() {
+            mCrimeSolved.isChecked = mCrime.isSolved
+            if (mCrime.isSolved) {
+                mCrimeTitle.paintFlags = mCrimeTitle.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                mCrimeDate.paintFlags = mCrimeDate.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            } else {
+                mCrimeTitle.paintFlags =
+                    mCrimeTitle.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+                mCrimeDate.paintFlags = mCrimeDate.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            }
         }
 
     }
 
 
-
-    private inner class CrimeAdapter(var crimes: List<Crime>) : RecyclerView.Adapter<CrimeHolder>() {
+    private inner class CrimeAdapter() :
+        RecyclerView.Adapter<CrimeHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CrimeHolder {
             val view = layoutInflater.inflate(R.layout.list_item_crime, parent, false)
             return CrimeHolder(view)
         }
 
         override fun onBindViewHolder(holder: CrimeHolder, position: Int) {
-            val crime = crimes[position]
-            holder.bind(crime)
+            val crime = mCrimeListViewModel.saveCrimeList[position]
+            holder.bind(crime, position)
         }
 
         override fun getItemCount(): Int {
-            return crimes.size
+            return mCrimeListViewModel.saveCrimeList.size
         }
 
+    }
+
+    interface Callbacks {
+        fun onCrimeSelected(crimeId: UUID)
     }
 }

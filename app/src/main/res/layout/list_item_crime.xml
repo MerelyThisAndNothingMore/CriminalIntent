@@ -5,8 +5,7 @@
     android:id="@+id/crime_card_view"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp"
-    app:cardCornerRadius="4dp">
+    android:layout_margin="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -40,13 +39,13 @@
             app:layout_constraintEnd_toStartOf="@id/crime_solved"
             tools:text="Crime Date" />
 
-        <ImageView
+        <CheckBox
             android:id="@+id/crime_solved"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_margin="16dp"
-            android:contentDescription="@string/crime_solved_pic_des"
-            android:src="@drawable/crime_unsolved_pic"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:layout_marginEnd="16dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />

@@ -4,8 +4,9 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.example.criminalintent.view.CrimeFragment
 import com.example.criminalintent.view.CrimeListFragment
+import java.util.*
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), CrimeListFragment.Callbacks {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,5 +19,13 @@ class MainActivity : AppCompatActivity() {
                 .add(R.id.fragment_container, CrimeListFragment.newInstance())
                 .commit()
         }
+    }
+
+    override fun onCrimeSelected(crimeId: UUID) {
+        supportFragmentManager
+            .beginTransaction()
+            .replace(R.id.fragment_container, CrimeFragment.newInstance(crimeId))
+            .addToBackStack(null)
+            .commit()
     }
 }
