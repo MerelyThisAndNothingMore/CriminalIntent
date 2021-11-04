@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.ViewModelProvider
 import com.example.criminalintent.R
 import com.example.criminalintent.model.Crime
@@ -26,6 +27,8 @@ class CrimeFragment : Fragment() {
     companion object {
 
         private const val ARG_CRIME_ID = "crime_id"
+        private const val DATE_PICKER_DIALOG = "date_picker_dialog"
+        private const val DATE_PICKER_REQUEST_KEY = "date_picker_request"
 
         fun newInstance(crimeId: UUID): CrimeFragment {
             return CrimeFragment().apply {
@@ -61,10 +64,6 @@ class CrimeFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_crime, container, false)
         mCrimeTitle = view.findViewById(R.id.crime_title)
         mCrimeData = view.findViewById(R.id.crime_date)
-        mCrimeData?.apply {
-            text = mCrime.date.toString()
-            isEnabled = false
-        }
         mCrimeSolved = view.findViewById(R.id.crime_solved)
         return view
     }
@@ -108,6 +107,18 @@ class CrimeFragment : Fragment() {
 
         mCrimeSolved?.setOnCheckedChangeListener { _, isChecked ->
             mCrime.isSolved = isChecked
+        }
+
+        mCrimeData?.setOnClickListener {
+            DatePickerFragment.newInstance(mCrime.date, DATE_PICKER_REQUEST_KEY).apply {
+                this@CrimeFragment.parentFragmentManager.setFragmentResultListener(
+                    DATE_PICKER_REQUEST_KEY,
+                    this@CrimeFragment) { _, result ->
+                    mCrime.date = result.getSerializable(DatePickerFragment.REQUEST_DATE_KEY) as Date
+                    updateUI()
+                }
+                show(this@CrimeFragment.parentFragmentManager, DATE_PICKER_DIALOG)
+            }
         }
     }
 
