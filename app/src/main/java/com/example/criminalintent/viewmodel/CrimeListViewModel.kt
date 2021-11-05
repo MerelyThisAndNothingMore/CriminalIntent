@@ -15,7 +15,7 @@ import java.util.concurrent.Executor
  * @author : zhangjin.rolling
  * @date : 2021/10/22
  */
-class CrimeListViewModel: ViewModel() {
+class CrimeListViewModel : ViewModel() {
 
     private val mCrimeRepository by lazy { CrimeRepository.instance() }
 
@@ -25,6 +25,10 @@ class CrimeListViewModel: ViewModel() {
 
     fun updateCrimes() {
         mCrimeRepository.updateCrimes(saveCrimeList)
+    }
+
+    fun addCrime(crime: Crime) {
+        mCrimeRepository.insertCrime(crime)
     }
 
 }
