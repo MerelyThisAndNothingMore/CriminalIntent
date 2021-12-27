@@ -6,6 +6,7 @@ import androidx.room.Room
 import com.example.criminalintent.database.CrimeDatabase
 import com.example.criminalintent.database.migration_1_2
 import com.example.criminalintent.model.Crime
+import java.io.File
 import java.util.*
 import java.util.concurrent.Executors
 
@@ -28,6 +29,7 @@ class CrimeRepository private constructor(context: Context) {
     private val crimeDao by lazy { database.getCrimeDao() }
 
     private val executor = Executors.newSingleThreadExecutor()
+    private val filesDir = context.applicationContext.filesDir
 
     private fun execute(command: () -> Unit) = executor.execute(command)
 
@@ -38,6 +40,8 @@ class CrimeRepository private constructor(context: Context) {
     fun insertCrime(crime: Crime) = execute { crimeDao.insertCrime(crime) }
 
     fun insertCrimes(crimes: List<Crime>) = execute { crimeDao.insertCrimes(crimes) }
+
+    fun getPhotoFile(crime: Crime) = File(filesDir, crime.photoFileName)
 
     fun updateCrime(crime: Crime) = execute { crimeDao.updateCrime(crime) }
 

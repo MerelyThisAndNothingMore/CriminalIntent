@@ -2,23 +2,27 @@ package com.example.criminalintent.view
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.provider.ContactsContract
+import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.format.DateFormat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.EditText
+import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.criminalintent.R
 import com.example.criminalintent.model.Crime
+import com.example.criminalintent.util.PictureUtils
 import com.example.criminalintent.viewmodel.CrimeDetailViewModel
+import java.io.File
 import java.util.*
 
 /****
@@ -45,6 +49,8 @@ class CrimeFragment : Fragment() {
     }
 
     private var mCrime = Crime()
+    private lateinit var mPhotoFile: File
+    private lateinit var mPhotoUri: Uri
 
     private val crimeDetailViewModel by lazy {
         ViewModelProvider(this).get(CrimeDetailViewModel::class.java)
@@ -69,11 +75,22 @@ class CrimeFragment : Fragment() {
         }
     }
 
-    private var mCrimeTitle: EditText? = null
+    private val mPhotoRegister = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { it ->
+        if (it.resultCode == Activity.RESULT_OK) {
+            it.data?.data?.let { resultUri ->
+                requireActivity().revokeUriPermission(mPhotoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                updateUI()
+            }
+        }
+    }
+
+    private var mCrimeTitleEdit: EditText? = null
     private var mCrimeData: Button? = null
     private var mCrimeSolved: CheckBox? = null
     private var mReportButton: Button? = null
     private var mPickSuspectButton: Button? = null
+    private var mPictureView: ImageView? = null
+    private var mCameraButton: ImageButton? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,11 +104,13 @@ class CrimeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_crime, container, false)
-        mCrimeTitle = view.findViewById(R.id.crime_title)
+        mCrimeTitleEdit = view.findViewById(R.id.crime_title_edit)
         mCrimeData = view.findViewById(R.id.crime_date)
         mCrimeSolved = view.findViewById(R.id.crime_solved)
         mReportButton = view.findViewById(R.id.crime_report)
         mPickSuspectButton = view.findViewById(R.id.crime_suspect)
+        mPictureView = view.findViewById(R.id.crime_picture)
+        mCameraButton = view.findViewById(R.id.crime_camera_button)
         return view
     }
 
@@ -100,13 +119,19 @@ class CrimeFragment : Fragment() {
         crimeDetailViewModel.crimeLiveData.observe(viewLifecycleOwner) { crime ->
             crime?.let {
                 mCrime = crime
+                mPhotoFile = crimeDetailViewModel.getPhotoFile(crime)
+                mPhotoUri = FileProvider.getUriForFile(
+                    requireActivity(),
+                    "com.example.criminalintent.fileprovider",
+                    mPhotoFile
+                )
                 updateUI()
             }
         }
     }
 
     private fun updateUI() {
-        mCrimeTitle?.setText(mCrime.title)
+        mCrimeTitleEdit?.setText(mCrime.title)
         mCrimeData?.text = mCrime.date.toString()
         mCrimeSolved?.apply {
             isChecked = mCrime.isSolved
@@ -114,6 +139,11 @@ class CrimeFragment : Fragment() {
         }
         if (mCrime.suspect.isNotEmpty()) {
             mPickSuspectButton?.text = mCrime.suspect
+        }
+        if (mPhotoFile.exists()) {
+            mPictureView?.setImageBitmap(PictureUtils.getScaledBitmap(mPhotoFile.path, requireActivity()))
+        } else {
+            mPictureView?.setImageDrawable(null)
         }
     }
 
@@ -137,7 +167,7 @@ class CrimeFragment : Fragment() {
     override fun onStart() {
         super.onStart()
 
-        mCrimeTitle?.addTextChangedListener(object : TextWatcher {
+        mCrimeTitleEdit?.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
 
             }
@@ -181,10 +211,30 @@ class CrimeFragment : Fragment() {
         mPickSuspectButton?.setOnClickListener {
             mRegister.launch(Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI))
         }
+
+        mCameraButton?.setOnClickListener {
+            val photoIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                putExtra(MediaStore.EXTRA_OUTPUT, mPhotoUri)
+            }
+            requireActivity().packageManager.queryIntentActivities(photoIntent, PackageManager.MATCH_DEFAULT_ONLY)
+                .forEach {
+                    requireActivity().grantUriPermission(
+                        it.activityInfo.packageName,
+                        mPhotoUri,
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                }
+            mPhotoRegister.launch(photoIntent)
+        }
     }
 
     override fun onStop() {
         super.onStop()
         crimeDetailViewModel.saveCrime(mCrime)
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        requireActivity().revokeUriPermission(mPhotoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
     }
 }
